@@ -113,7 +113,7 @@ class ResponseController < ApplicationController
     rescue
       msg = "Your response was not saved. Cause:189 #{$ERROR_INFO}"
     end
-    redirect_to controller: 'response', action: 'saving', id: @map.map_id, return: params[:return], msg: msg, save_options: params[:save_options]
+    redirect_to controller: 'response', action: 'saving', auto_metareview: params[:auto_metareview], id: @map.map_id, return: params[:return], msg: msg, save_options: params[:save_options], volume: params[:volume], plagiarism: params[:plagiarism], tone_p: params[:tone_p], tone_n: params[:tone_n], tone_ng: params[:tone_ng]
   end
 
   def new
@@ -198,7 +198,7 @@ class ResponseController < ApplicationController
     end
 
     @response.email
-    redirect_to controller: 'response', action: 'saving', id: @map.map_id, return: params[:return], msg: msg, error_msg: error_msg, save_options: params[:save_options], volume: params[:volume], plagiarism: params[:plagiarism], tone_p: params[:tone_p], tone_n: params[:tone_n], tone_ng: params[:tone_ng]
+    redirect_to controller: 'response', action: 'saving', auto_metareview: params[:auto_metareview], id: @map.map_id, return: params[:return], msg: msg, error_msg: error_msg, save_options: params[:save_options], volume: params[:volume], plagiarism: params[:plagiarism], tone_p: params[:tone_p], tone_n: params[:tone_n], tone_ng: params[:tone_ng]
   end
 
   def saving
@@ -206,7 +206,7 @@ class ResponseController < ApplicationController
 
     @return = params[:return]
     @map.save
-    redirect_to action: 'redirection', id: @map.map_id, return: params[:return], msg: params[:msg], error_msg: params[:error_msg], volume: params[:volume], plagiarism: params[:plagiarism], tone_p: params[:tone_p], tone_n: params[:tone_n], tone_ng: params[:tone_ng]
+    redirect_to action: 'redirection', auto_metareview: params[:auto_metareview], id: @map.map_id, return: params[:return], msg: params[:msg], error_msg: params[:error_msg], volume: params[:volume], plagiarism: params[:plagiarism], tone_p: params[:tone_p], tone_n: params[:tone_n], tone_ng: params[:tone_ng]
   end
 
   def redirection
@@ -226,9 +226,10 @@ class ResponseController < ApplicationController
       redirect_to controller: 'submitted_content', action: 'edit', id: @map.response_map.reviewer_id
     elsif params[:return] == "survey"
       redirect_to controller: 'response', action: 'pending_surveys'
+    elsif params[:auto_metareview] == "Yes"
+      redirect_to controller: 'response', action: 'autometareview', map_id: @map.map_id, id: @map.response_map.assignment.id, volume: params[:volume], plagiarism: params[:plagiarism], tone_p: params[:tone_p], tone_n: params[:tone_n], tone_ng: params[:tone_ng], reviewer_id: @map.reviewer.id
     else
-      redirect_to controller: 'response', action: 'autometareview', id: @map.response_map.assignment.id, volume: params[:volume], plagiarism: params[:plagiarism], tone_p: params[:tone_p], tone_n: params[:tone_n], tone_ng: params[:tone_ng]
-      #redirect_to controller: 'student_review', action: 'list', id: @map.reviewer.id
+      redirect_to controller: 'student_review', action: 'list', id: @map.reviewer.id
 
     end
   end
@@ -306,43 +307,52 @@ class ResponseController < ApplicationController
   end
 
   def autometareview
-    #@reviewers = AssignmentParticipant.where(["user_id IN (?) and parent_id = ?", user, assignment.id])
-     @reviewers = ReviewResponseMap.where(reviewed_object_id: params[:id])
-    # @reviewers.each do |r|
-    #   r.overall_avg_vol,
-    #   r.avg_vol_in_round_1,
-    #   r.avg_vol_in_round_2,
-    #   r.avg_vol_in_round_3 = Response.get_volume_of_review_comments(@assignment.id, r.id)
-    # end
-    #
-    # @avg_volume  =
 
-     comments_full = ""
-     @reviewers.each do |r|
-     comments, counter,
-     comments_in_round_1, counter_in_round_1,
-     comments_in_round_2, counter_in_round_2,
-     comments_in_round_3, counter_in_round_3 = Response.concatenate_all_review_comments(params[:id], r.id)
-     comments_full += comments
-     end
+    @id = params[:id]
+    @reviewer_id = params[:reviewer_id]
+    @assignment = Assignment.find(@id)
+    @map_id = params[:map_id]
+    @type = "ReviewResponseMap"
 
-     rev = {submission:'my submission',reviews: comments_full,rubric:'my rubric'}
-     header = {'Content-Type' => 'application/json'}
+    # Search for all the reviewers in the current assignment
+    @reviewers = ReviewResponseMap.review_response_report(@id, @assignment, @type, nil)
 
-     uri = URI.parse("http://peerlogic.csc.ncsu.edu/metareview/metareviewgenerator/volume")
-     http = Net::HTTP.new(uri.host, uri.port)
-     request = Net::HTTP::Post.new(uri.request_uri, header)
-     request.body = rev.to_json
-     response = http.request(request)
 
-     rep = JSON.parse(response.body)
-     @avg_volume = rep["volume"]
+     #comments_full = ""
+    @tot_vol =0
+    @count_rev =0
+    #current_round = @assignement.number_of_current_round()
+    reviewees_topic = SignedUpTeam.topic_id(@assignment.id, @reviewer_id)
+    @current_round = @assignment.number_of_current_round(reviewees_topic)
+
+    @reviewers.each do |r|
+      overall_avg_vol, avg_vol_in_round_1, avg_vol_in_round_2, avg_vol_in_round_3 = Response.get_volume_of_review_comments(params[:id], r.id)
+
+
+      if @current_round == 1
+        @tot_vol += avg_vol_in_round_1
+        @count_rev = @count_rev+1
+      elsif @current_round == 2
+        @tot_vol += avg_vol_in_round_2
+        @count_rev = @count_rev+1
+      else
+        @tot_vol += overall_avg_vol
+        @count_rev = @count_rev+1
+      end
+
+
+
+    end
+
+
+    @avg_volume = (@tot_vol.to_f/@count_rev)
 
     @volume = params[:volume]
     @plagiarism = params[:plagiarism]
     @tone_p = params[:tone_p]
     @tone_n = params[:tone_n]
     @tone_ng = params[:tone_ng]
+    @map_id = params[:map_id]
 
   end
 

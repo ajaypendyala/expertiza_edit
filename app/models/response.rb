@@ -11,7 +11,7 @@ class Response < ActiveRecord::Base
 
   alias map response_map
 
-  attr_accessor :difficulty_rating, :reviewers
+  attr_accessor :difficulty_rating
 
   delegate :questionnaire, :reviewee, :reviewer, to: :map
 

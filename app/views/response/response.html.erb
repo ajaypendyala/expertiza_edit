@@ -1,21 +1,37 @@
 <script>
 jQuery(document).ready(function() {
 
+
     jQuery('#Submit').click(function(e){
-    if(!confirm('Once a review has been submitted, you cannot edit it again')){
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-    }else{
+        if(!confirm('Once a review has been submitted, you cannot edit it again')){
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }else{
+            jQuery('#isSubmit').val('Yes');
+        }
+    })
+    $(function(){
+        $("form").sisyphus({
+            locationBased: true,
+            autoRelease: true
+        });
+    });
+
+    jQuery('#save').click(function(e){
+//    if(!confirm('Once a review has been submitted, you cannot edit it again')){
+//        e.preventDefault();
+//        e.stopPropagation();
+//        return;
+//    }else {
 
         var respData = [];
 
-        $('textarea').each(function() {
+        $('textarea').each(function () {
 
             respData.push($(this).val());
 
         });
-
 
 
         var rev = {submission: "my submission", reviews: respData.join(' ').toString(), rubric: "my rubric"};
@@ -24,13 +40,13 @@ jQuery(document).ready(function() {
 //            alert( "Data Loaded: " + data);
 //        });
 
-           alert(JSON.stringify(rev));
+        alert(JSON.stringify(rev));
 
-        var volReq= $.ajax({
+        var volReq = $.ajax({
             url: "http://peerlogic.csc.ncsu.edu/metareview/metareviewgenerator/volume",
             type: "POST",
             contentType: "application/json; charset=utf-8",
-            dataType : 'json',
+            dataType: 'json',
             async: false,
             data: JSON.stringify(rev),
             success: function (data) {
@@ -44,11 +60,11 @@ jQuery(document).ready(function() {
 
         });
 
-       var toneReq = $.ajax({
+        var toneReq = $.ajax({
             url: "http://peerlogic.csc.ncsu.edu/metareview/metareviewgenerator/tone",
             type: "POST",
             contentType: "application/json; charset=utf-8",
-            dataType : 'json',
+            dataType: 'json',
             async: false,
             data: JSON.stringify(rev),
             success: function (data) {
@@ -82,7 +98,7 @@ jQuery(document).ready(function() {
             url: "http://peerlogic.csc.ncsu.edu/metareview/metareviewgenerator/plagiarism",
             type: "POST",
             contentType: "application/json; charset=utf-8",
-            dataType : 'json',
+            dataType: 'json',
             async: false,
             data: JSON.stringify(rev),
             success: function (data) {
@@ -105,21 +121,21 @@ jQuery(document).ready(function() {
 //                jQuery('#isSubmit').val('Yes');
 //            });
 
-            //callback();
+        //callback();
         //}
 
-        $.when(volReq, toneReq, plagReq).then(function (d1,d2, d4) {
-            alert("AutoMetaReview metrics: \nVolume is:" + d1[0].volume + "\nPostive Tone is: " + d2[0].tone_positive + ", Neg tone is: " + d2[0].tone_negative + ", Neutral tone is: " + d2[0].tone_neutral + "\n"+ "Plagiarism: " + d4[0].plagiarism);
-            jQuery('#isSubmit').val('Yes');
+        $.when(volReq, toneReq, plagReq).then(function (d1, d2, d4) {
+            alert("AutoMetaReview metrics: \nVolume is:" + d1[0].volume + "\nPostive Tone is: " + d2[0].tone_positive + ", Neg tone is: " + d2[0].tone_negative + ", Neutral tone is: " + d2[0].tone_neutral + "\n" + "Plagiarism: " + d4[0].plagiarism);
+            jQuery('#isSubmit').val('No');
             jQuery('#volume').val(d1[0].volume);
             jQuery('#plagiarism').val(d4[0].plagiarism);
             jQuery('#tone_p').val(d2[0].tone_positive);
             jQuery('#tone_n').val(d2[0].tone_neutral);
             jQuery('#tone_ng').val(d2[0].tone_negative);
+            jQuery('#auto_metareview').val('Yes');
 
 
         });
-
 
 
 //        function submitNow()
@@ -128,11 +144,9 @@ jQuery(document).ready(function() {
 //        }
 
 
+    //}
 
 
-
-
-    }
     })
     $(function(){
         $("form").sisyphus({
@@ -229,7 +243,8 @@ jQuery(document).ready(function() {
 
     <br/>
     <br>
-    <%= submit_tag "Save "+@title, :name => "save" %>
+    <b>Note: Save the review first to see the meta-review metrics </b><br>
+    <%= submit_tag "Save "+@title, :name => "save", :id => "save" %>
     <!--#E1600 check title for selfreview to show submit button-->
     <% if @title && ((@title.eql? 'Review') || (@title.eql? 'Self Review')) %>
         <%= submit_tag "Submit "+@title, :name => "Submit", :id => "Submit" %>
@@ -242,8 +257,8 @@ jQuery(document).ready(function() {
     <%= hidden_field_tag "tone_p", :id=>"tone_p" %>
     <%= hidden_field_tag "tone_n", :id=>"tone_n" %>
     <%= hidden_field_tag "tone_ng", :id=>"tone_ng" %>
-    <!--%= button_tag "Autometa review metrics", :type => "button", :name => "Metareview metrics" ,:id => "auto_ms" %-->
-    <!--%= hidden_field_tag "tone", :id=>"volume" %-->
+    <%= hidden_field_tag "auto_metareview", :id=>"auto_metareview" %>
+
 <% end %>
 <!--Check whether there is a UploadFile question.-->
 <%@questions.each do |question| %>

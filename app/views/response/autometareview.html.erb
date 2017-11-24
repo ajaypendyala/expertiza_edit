@@ -1,7 +1,7 @@
 <head>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script type="text/javascript">
-      google.charts.load("current", {packages:["corechart"]});
+      google.charts.load("current", {packages:["corechart", "bar"]});
       google.charts.setOnLoadCallback(drawChart);
       google.charts.setOnLoadCallback(drawBarColors);
       function drawChart() {
@@ -13,8 +13,9 @@
           ]);
 
           var options = {
-              title: 'tone',
-              chartArea: {width: '60%'},
+              title: 'Tone',
+              chartArea: {width: '50%', height: '40%'},
+              bar: {groupWidth: "50%"},
               legend: { position: "none" }
               //colors: ['#b0120a']
           };
@@ -26,16 +27,19 @@
 
       function drawBarColors() {
           var data = google.visualization.arrayToDataTable([
-              ['Volume', 'volume'],
-              ['Review Volume',parseInt(jQuery('#vol').val())],
-              ['Avg Volume',parseInt(jQuery('#avg_vol').val())],
-              ['Benchmark Volume',18]
+              ['Volume', 'Volume', { role: 'style' }],
+              ['Review Volume',parseInt(jQuery('#vol').val()), 'c53711'],
+              ['Avg. Volume',parseInt(jQuery('#avg_vol').val()), '0000ff']
+              //['Benchmark Volume',58]
           ]);
 
           var options = {
-              title: 'volume',
-              chartArea: {width: '60%'},
-              colors: ['#120A8F']
+              title: 'Review Volume',
+              chartArea: {width: '50%'},
+              bar: {groupWidth: "40%"},
+              legend: {position: 'none'}
+
+              //colors: ['#00ff00']
 
           };
           var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
@@ -46,7 +50,7 @@
 
 
 
-<h2> Autometareview Metrics </h2>
+<h2> Automated Metareview Metrics </h2>
 <br>
 <table class ="metrics">
   <tr>
@@ -60,31 +64,42 @@
   </tr>
   <tr>
     <td>Plagiarism:</td>
-    <td style="color: green"><%= @plagiarism %></td>
+    <td class ="upper" style="color: green"><b><%= @plagiarism %></b></td>
 
   </tr>
   <tr>
-    <td>Postive Tone:</td>
+    <td>Tone:</td>
     <!--<td></td>-->
-    <td rowspan="3" id="piechart_3d" style="width: 500px; height: 230px;"></td>
+    <td  id="piechart_3d" style="width: 500px; height: 200px;"></td>
   </tr>
-  <tr>
-    <td>Negative Tone:</td>
-    <!--<td></td>-->
 
-  </tr>
-  <tr>
-    <td>Neutral Tone:</td>
-    <!--<td></td>-->
-  </tr>
+
+
 
 </table>
 <%= hidden_field_tag "pos", @tone_p, { :id => "pos" } %>
 <%= hidden_field_tag "neg", @tone_ng, { :id => "neg" } %>
 <%= hidden_field_tag "neut", @tone_n, { :id => "neut" } %>
 <%= hidden_field_tag "vol", @volume, { :id => "vol" } %>
-<%= hidden_field_tag "avg_vol", @volume, { :id => "avg_vol" } %>
+<%= hidden_field_tag "avg_vol", @avg_volume, { :id => "avg_vol" } %>
 
+<% array_not_empty = 0 %>
+<% @sorted_responses = Array.new %>
+<% @prev = Response.where(:map_id => @map_id) %>
+<% for element in @prev %>
+    <% array_not_empty = 1 %>
+    <% @sorted_responses << element %>
+<% end %>
+
+<% if (array_not_empty == 1) %>
+    <% @sorted_responses = @sorted_responses.sort_by {|obj| obj.updated_at} # the latest should be at the last%>
+    <% @latest_response = @sorted_responses.last %>
+<% end %>
+<!--%= @response_id = Response.find_by_map_id(@map_id) %-->
+<%= link_to "Edit", {:controller => 'response', :action => 'edit', :id => @latest_response.id } %>
+<br>
+<br>
+<%= link_to 'Back to Reviews List', :controller => 'student_review', :action =>'list', :id => @reviewer_id %>
 <style>
     /*table, th, td {*/
         /*border: 1px solid black;*/
@@ -97,10 +112,11 @@
         background:#eaebec;
         margin:20px;
         border:#ccc 1px solid;
-
         -moz-border-radius:3px;
         -webkit-border-radius:3px;
         border-radius:3px;
+        height: 45%;
+        width: 50%;
 
         -moz-box-shadow: 0 1px 2px #d1d1d1;
         -webkit-box-shadow: 0 1px 2px #d1d1d1;
@@ -170,6 +186,9 @@
         background: #f2f2f2;
         background: -webkit-gradient(linear, left top, left bottom, from(#f2f2f2), to(#f0f0f0));
         background: -moz-linear-gradient(top,  #f2f2f2,  #f0f0f0);
+    }
+    td.upper {
+        text-transform: uppercase;
     }
 </style>
 

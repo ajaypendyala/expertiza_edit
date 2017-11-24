@@ -109,24 +109,7 @@ module ReviewMappingHelper
     metric.html_safe
   end
 
-  # def get_avg_volume_by_round(assignment_id, reviewer_id, round)
-  #   @reviewers.each do |r|
-  #     r.overall_avg_vol,
-  #         r.avg_vol_in_round_1,
-  #         r.avg_vol_in_round_2,
-  #         r.avg_vol_in_round_3 = Response.get_volume_of_review_comments(@assignment.id, r.id)
-  #     end
-  #     sum =0
-  #     @reviewers.each do |r|
-  #       sum = sum+ r.avg_vol_in_round_2
-  #       counter = counter +1
-  #       end
-  #       avg_vol = sum/counter
-  #       [avg_vol]
-  # end
-
-
-      def list_review_submissions(participant_id, reviewee_team_id, response_map_id)
+  def list_review_submissions(participant_id, reviewee_team_id, response_map_id)
     participant = Participant.find(participant_id)
     team = AssignmentTeam.find(reviewee_team_id)
     html = ''
